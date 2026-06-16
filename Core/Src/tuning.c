@@ -12,7 +12,9 @@ DAC_HandleTypeDef hdac1;
 TIM_HandleTypeDef htim6;
 DMA_HandleTypeDef hdma_dac1;
 
-static uint16_t sweep_lut[TUNING_SWEEP_POINTS];
+/* LUT 32-bit: DMA zapisuje DHR12R1 slowami (zapis polslowem na DAC daje
+   blad transferu DMA na G4). */
+static uint32_t sweep_lut[TUNING_SWEEP_POINTS];
 static uint8_t  sweeping;
 
 static void dac_config_channel(uint32_t trigger)
@@ -67,7 +69,7 @@ static void build_lut(uint16_t amp12, uint8_t shape)
       v = (i < half) ? (amp12 * i) / half
                      : (amp12 * (n - i)) / half;
     }
-    sweep_lut[i] = (uint16_t)(v & 0x0FFFu);
+    sweep_lut[i] = (v & 0x0FFFu);
   }
 }
 
@@ -153,8 +155,8 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef *hdac)
     hdma_dac1.Init.Direction           = DMA_MEMORY_TO_PERIPH;
     hdma_dac1.Init.PeriphInc           = DMA_PINC_DISABLE;
     hdma_dac1.Init.MemInc              = DMA_MINC_ENABLE;
-    hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac1.Init.MemDataAlignment    = DMA_MDATAALIGN_HALFWORD;
+    hdma_dac1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_dac1.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     hdma_dac1.Init.Mode                = DMA_CIRCULAR;
     hdma_dac1.Init.Priority            = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_dac1) != HAL_OK) {
@@ -175,8 +177,8 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef *hdac)
     hdma_dac1_ch2.Init.Direction           = DMA_MEMORY_TO_PERIPH;
     hdma_dac1_ch2.Init.PeriphInc           = DMA_PINC_DISABLE;
     hdma_dac1_ch2.Init.MemInc              = DMA_MINC_ENABLE;
-    hdma_dac1_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-    hdma_dac1_ch2.Init.MemDataAlignment    = DMA_MDATAALIGN_HALFWORD;
+    hdma_dac1_ch2.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+    hdma_dac1_ch2.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
     hdma_dac1_ch2.Init.Mode                = DMA_CIRCULAR;
     hdma_dac1_ch2.Init.Priority            = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(&hdma_dac1_ch2) != HAL_OK) {

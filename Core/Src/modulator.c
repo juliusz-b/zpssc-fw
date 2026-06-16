@@ -13,7 +13,7 @@ DMA_HandleTypeDef hdma_spi1_tx;
 #ifdef ANALOG_MOD
 TIM_HandleTypeDef htim7;
 DMA_HandleTypeDef hdma_dac1_ch2;
-static uint16_t analog_lut[CODE_MAXLEN];
+static uint32_t analog_lut[CODE_MAXLEN];   /* slowa: zapis DHR12R1 32-bit */
 static uint16_t analog_len;
 #endif
 
