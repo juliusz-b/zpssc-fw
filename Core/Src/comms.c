@@ -9,15 +9,19 @@
 #include <stdlib.h>
 
 /* funkcje koordynujace z main.c */
+extern void        app_set_stream(int on);
+extern void        app_print_status(void);
+#if OP_MODE == MODE_SPECTRUM
+extern void        app_request_spec(void);
+#else
 extern void        app_rebuild_code(int type);
 extern int         app_set_chip_rate(uint32_t chip_hz);
 extern void        app_start(void);
 extern void        app_stop(void);
 extern void        app_set_mode(int mode);
-extern void        app_set_stream(int on);
-extern void        app_print_status(void);
 extern void        app_print_last(void);
 extern void        app_request_scan(void);
+#endif
 
 UART_HandleTypeDef huart2;
 
@@ -95,15 +99,18 @@ static void cmd_help(void)
   comms_print(
     "Komendy:\r\n"
     " PING | ID | STATUS | HELP\r\n"
-    " START | STOP\r\n"
     " LVL <0-4095>\r\n"
     " SWEEP OFF | SWEEP <okres_ms> <amp> [TRI|SAW]\r\n"
+#if OP_MODE == MODE_SPECTRUM
+    " SPEC | STREAM <ON|OFF>\r\n");
+#else
+    " START | STOP\r\n"
     " RATE <chip_hz>\r\n"
     " CODE <MSEQ|GOLD|KASAMI>\r\n"
     " LEN <127|255|511>   (kompilacyjnie)\r\n"
-    " MODE <DIRECT|ETS|SCAN>\r\n"
-    " SCAN   (skan banku kodow -> widmo)\r\n"
+    " MODE <DIRECT|ETS|SCAN> | SCAN\r\n"
     " CORR | STREAM <ON|OFF>\r\n");
+#endif
 }
 
 static void handle_line(char *line)
@@ -128,6 +135,7 @@ static void handle_line(char *line)
   else if (strcmp(tok, "STATUS") == 0) {
     app_print_status();
   }
+#if OP_MODE != MODE_SPECTRUM
   else if (strcmp(tok, "START") == 0) {
     app_start();
     comms_print("OK\r\n");
@@ -136,6 +144,7 @@ static void handle_line(char *line)
     app_stop();
     comms_print("OK\r\n");
   }
+#endif
   else if (strcmp(tok, "LVL") == 0) {
     char *a = strtok(NULL, " \t");
     if (a) {
@@ -162,6 +171,7 @@ static void handle_line(char *line)
       comms_print("ERR arg\r\n");
     }
   }
+#if OP_MODE != MODE_SPECTRUM
   else if (strcmp(tok, "RATE") == 0) {
     char *a = strtok(NULL, " \t");
     if (a) {
@@ -200,6 +210,11 @@ static void handle_line(char *line)
   else if (strcmp(tok, "SCAN") == 0) {
     app_request_scan();   /* jeden przebieg skanu banku kodow */
   }
+#else
+  else if (strcmp(tok, "SPEC") == 0) {
+    app_request_spec();   /* jeden przebieg widma */
+  }
+#endif
   else if (strcmp(tok, "STREAM") == 0) {
     char *a = strtok(NULL, " \t");
     app_set_stream(a && strcmp(a, "ON") == 0);

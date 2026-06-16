@@ -2,27 +2,113 @@
  * main.c - spiecie modulow i super-petla
  * Juliusz Bojarczuk, Politechnika Warszawska
  *
- * main.c jedynie laczy moduly: inicjalizacja peryferiow, zbudowanie kodu,
- * a w petli glownej obsluga komend i przetwarzanie gotowych okien ADC.
- * Logika znajduje sie w modulach (board / code_gen / modulator / tuning /
- * acquisition / correlation / comms).
+ * main.c jedynie laczy moduly i prowadzi super-petle. Wybor trybu jest
+ * kompilacyjny przez OP_MODE: MODE_SPECTRUM buduje analizator widma (laser CW,
+ * sweep DAC, odczyt mocy odbitej), pozostale wartosci buduja tor CDM
+ * (DIRECT/SCAN/ETS z modulacja kodem i korelacja).
  */
 #include "main.h"
 #include "config.h"
 #include "board.h"
-#include "code_gen.h"
-#include "modulator.h"
 #include "tuning.h"
 #include "acquisition.h"
-#include "correlation.h"
 #include "comms.h"
+#if OP_MODE == MODE_SPECTRUM
+#include "spectrum.h"
+#else
+#include "code_gen.h"
+#include "modulator.h"
+#include "correlation.h"
+#endif
 
+/* wspolne dla obu trybow */
+static int g_stream;
+void app_set_stream(int on) { g_stream = on ? 1 : 0; }
+
+#if OP_MODE == MODE_SPECTRUM
+/* ===================== tryb widmowy (analizator) ===================== */
+static spec_result_t    g_spec;
+static volatile uint8_t g_spec_request;
+
+void app_request_spec(void)
+{
+  acquisition_start();
+  g_spec_request = 1;
+}
+
+void app_print_status(void)
+{
+  comms_print("STATUS mode=SPECTRUM points=");
+  comms_print_u32(SPEC_POINTS);
+  comms_print(" range=");
+  comms_print_u32(SPEC_LEVEL_MIN);
+  comms_print("..");
+  comms_print_u32(SPEC_LEVEL_MAX);
+  comms_print(" adc_hz=");
+  comms_print_u32(acquisition_get_rate());
+  comms_print(" laser_pa7=");
+  comms_print_u32(SPEC_LASER_PA7);
+  comms_print("\r\n");
+}
+
+/* Wypis przebiegu: naglowek + CSV mocy w kolejnosci k=0..N-1 (kazda probka to
+   ten sam poziom DAC = ta sama dlugosc fali wzgledem sweepa) + wykryte piki. */
+static void app_spec_report(const spec_result_t *r)
+{
+  comms_print("SPEC points=");
+  comms_print_u32(r->n_points);
+  comms_print(" min=");
+  comms_print_u32(SPEC_LEVEL_MIN);
+  comms_print(" max=");
+  comms_print_u32(SPEC_LEVEL_MAX);
+  comms_print(" peaks=");
+  comms_print_u32(r->n_peaks);
+  comms_print("\r\n");
+  for (uint16_t i = 0; i < r->n_points; i++) {
+    comms_print_u32(r->trace[i]);
+    comms_print((i + 1u < r->n_points) ? "," : "\r\n");
+  }
+  for (uint8_t p = 0; p < r->n_peaks; p++) {
+    comms_print("P ");
+    comms_print_u32(r->peaks[p].level);
+    comms_print(" ");
+    comms_print_u32(r->peaks[p].power);
+    comms_print("\r\n");
+  }
+  comms_print("SPEC end\r\n");
+}
+
+int main(void)
+{
+  HAL_Init();
+  board_clock_config();
+  board_gpio_init();
+
+  comms_init();
+  tuning_init();
+  acquisition_init();
+  spectrum_init();
+
+  comms_print("\r\nzpssc-fw SPECTRUM start (HELP po liste komend)\r\n");
+  app_print_status();
+  acquisition_start();
+
+  while (1) {
+    comms_task();
+    if (g_spec_request) {
+      spectrum_sweep(&g_spec);
+      app_spec_report(&g_spec);
+      g_spec_request = g_stream;   /* STREAM ON -> ciagly sweep */
+    }
+  }
+}
+
+#else /* ===================== tryb CDM (DIRECT / SCAN / ETS) ============= */
 /* ----------------------- stan aplikacji ----------------------- */
 static code_t        g_code;
 static corr_result_t g_last;
 static uint8_t       g_have_result;
 static int           g_mode    = OP_MODE;
-static int           g_stream;
 static uint8_t       g_running;
 static int           g_code_type = CODE_TYPE;
 static uint32_t      g_chip_rate;
@@ -101,8 +187,6 @@ void app_set_mode(int mode)
     app_rebuild_code(g_code_type);   /* przywroc pojedynczy kod */
   }
 }
-
-void app_set_stream(int on) { g_stream = on ? 1 : 0; }
 
 static const char *code_type_name(int t)
 {
@@ -216,7 +300,7 @@ static void app_scan_once(void)
   comms_print("SCAN end\r\n");
 }
 
-/* ----------------------- petla glowna ----------------------- */
+/* ----------------------- petla glowna (CDM) ----------------------- */
 int main(void)
 {
   HAL_Init();
@@ -263,6 +347,7 @@ int main(void)
     /* tryb ETS: rekonstrukcja realizowana po stronie acquisition (zaczatek) */
   }
 }
+#endif /* OP_MODE == MODE_SPECTRUM */
 
 /* ----------------------- obsluga bledu ----------------------- */
 void Error_Handler(void)

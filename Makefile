@@ -82,6 +82,11 @@ ifeq ($(ANALOG_MOD),1)
 C_DEFS += -DANALOG_MOD
 endif
 
+# tryb widmowy (analizator) zamiast toru CDM, wybierany kompilacyjnie
+ifeq ($(SPECTRUM),1)
+C_DEFS += -DOP_MODE=3
+endif
+
 ######################################
 # flagi
 ######################################

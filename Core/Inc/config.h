@@ -13,6 +13,10 @@
 #define MODE_DIRECT      0   /* probkowanie na zywo, jeden kod             */
 #define MODE_ETS         1   /* equivalent time sampling (zaczatek)        */
 #define MODE_SCAN        2   /* skan: bank kodow, kod na pasmo dlugosci fali */
+#define MODE_SPECTRUM    3   /* analizator widma: laser CW + sweep DAC + odczyt mocy */
+/* OP_MODE wybierany kompilacyjnie. MODE_SPECTRUM buduje osobny firmware
+   (analizator), pozostale wartosci buduja tor CDM. Mozna nadpisac z make:
+   `make SPECTRUM=1` -> -DOP_MODE=3. */
 #ifndef OP_MODE
 #define OP_MODE          MODE_DIRECT
 #endif
@@ -68,6 +72,16 @@
 #define SCAN_LEVEL_MIN    0U      /* poziom DAC pasma 0      (12-bit) */
 #define SCAN_LEVEL_MAX    4095U   /* poziom DAC pasma N-1    (12-bit) */
 #define SCAN_SETTLE_MS    2U      /* zwloka po zmianie poziomu/kodu   */
+
+/* =============== Tryb widmowy (OP_MODE = MODE_SPECTRUM) ============ */
+/* Laser CW (bez modulacji), sweep DAC po SPEC_POINTS poziomach, na kazdym
+   usrednienie okna ADC = moc odbita. Probka k to zawsze ten sam poziom DAC,
+   wiec indeks w UART jednoznacznie odpowiada dlugosci fali. */
+#define SPEC_POINTS       256U    /* liczba punktow widma (rozdzielczosc) */
+#define SPEC_LEVEL_MIN    0U      /* dolny poziom DAC sweepa (12-bit)     */
+#define SPEC_LEVEL_MAX    4095U   /* gorny poziom DAC sweepa (12-bit)     */
+#define SPEC_SETTLE_MS    1U      /* zwloka na ustalenie na punkt         */
+#define SPEC_LASER_PA7    0U      /* poziom PA7 (linia modulacji) w CW: 0=niski (na razie) */
 
 /* ============================ Telemetria ========================== */
 #define UART_BAUD         921600UL
