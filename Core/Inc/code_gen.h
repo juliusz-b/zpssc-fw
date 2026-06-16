@@ -26,4 +26,11 @@ typedef struct {
  */
 int code_gen_build(uint8_t type, uint16_t length, code_t *out);
 
+/*
+ * Buduje k-ty czlon rodziny Gold: u XOR (v przesuniete cyklicznie o shift).
+ * Rozne shift daja kody o niskiej korelacji wzajemnej (bank do CDM).
+ * Dziala dla n nieparzystego (length 127 lub 511). Zwraca 0 / -1.
+ */
+int code_gen_gold_member(uint16_t length, uint16_t shift, code_t *out);
+
 #endif /* CODE_GEN_H */

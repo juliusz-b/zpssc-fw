@@ -46,12 +46,12 @@ void correlation_init(void)
 #endif
 }
 
-void correlation_set_reference(const code_t *code)
+void correlation_set_reference_q15(const int16_t *ref, uint16_t len)
 {
-  ref_len = code->length;
-  for (uint16_t i = 0; i < ref_len; i++) {
-    ref_q15[i] = code->ref_q15[i];
-    ref_rev[i] = code->ref_q15[ref_len - 1u - i];  /* odwrocenie w czasie */
+  ref_len = len;
+  for (uint16_t i = 0; i < len; i++) {
+    ref_q15[i] = ref[i];
+    ref_rev[i] = ref[len - 1u - i];  /* odwrocenie w czasie */
   }
 
 #if (CORR_ENGINE == CORR_ENGINE_FMAC)
@@ -83,6 +83,11 @@ void correlation_set_reference(const code_t *code)
   cfg.R                 = 0;
   fmac_ready = (HAL_FMAC_FilterConfig(&hfmac, &cfg) == HAL_OK) ? 1u : 0u;
 #endif
+}
+
+void correlation_set_reference(const code_t *code)
+{
+  correlation_set_reference_q15(code->ref_q15, code->length);
 }
 
 /* ===================== przygotowanie sygnalu ===================== */
@@ -210,6 +215,9 @@ static void detect_peaks(uint16_t nlags, corr_result_t *res)
     }
   }
   res->max_amp = mx;
+  if (mx <= 0) {
+    return;   /* brak dodatniej korelacji -> brak pikow (bez pseudo-zer) */
+  }
   int32_t thr = (int32_t)((float)mx * PEAK_THRESH_FRAC);
 
   for (uint16_t k = 0; k < nlags && res->n_peaks < MAX_PEAKS; k++) {

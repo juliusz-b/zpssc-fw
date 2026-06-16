@@ -17,6 +17,7 @@ extern void        app_set_mode(int mode);
 extern void        app_set_stream(int on);
 extern void        app_print_status(void);
 extern void        app_print_last(void);
+extern void        app_request_scan(void);
 
 UART_HandleTypeDef huart2;
 
@@ -100,7 +101,8 @@ static void cmd_help(void)
     " RATE <chip_hz>\r\n"
     " CODE <MSEQ|GOLD|KASAMI>\r\n"
     " LEN <127|255|511>   (kompilacyjnie)\r\n"
-    " MODE <DIRECT|ETS>\r\n"
+    " MODE <DIRECT|ETS|SCAN>\r\n"
+    " SCAN   (skan banku kodow -> widmo)\r\n"
     " CORR | STREAM <ON|OFF>\r\n");
 }
 
@@ -187,12 +189,16 @@ static void handle_line(char *line)
   }
   else if (strcmp(tok, "MODE") == 0) {
     char *a = strtok(NULL, " \t");
-    if (a && strcmp(a, "DIRECT") == 0)   { app_set_mode(MODE_DIRECT); comms_print("OK\r\n"); }
-    else if (a && strcmp(a, "ETS") == 0) { app_set_mode(MODE_ETS);    comms_print("OK\r\n"); }
-    else                                 { comms_print("ERR arg\r\n"); }
+    if (a && strcmp(a, "DIRECT") == 0)      { app_set_mode(MODE_DIRECT); comms_print("OK\r\n"); }
+    else if (a && strcmp(a, "ETS") == 0)    { app_set_mode(MODE_ETS);    comms_print("OK\r\n"); }
+    else if (a && strcmp(a, "SCAN") == 0)   { app_set_mode(MODE_SCAN);   comms_print("OK\r\n"); }
+    else                                    { comms_print("ERR arg\r\n"); }
   }
   else if (strcmp(tok, "CORR") == 0 || strcmp(tok, "CORR?") == 0) {
     app_print_last();
+  }
+  else if (strcmp(tok, "SCAN") == 0) {
+    app_request_scan();   /* jeden przebieg skanu banku kodow */
   }
   else if (strcmp(tok, "STREAM") == 0) {
     char *a = strtok(NULL, " \t");

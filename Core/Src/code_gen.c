@@ -116,3 +116,25 @@ int code_gen_build(uint8_t type, uint16_t length, code_t *out)
   make_reference(out);
   return 0;
 }
+
+int code_gen_gold_member(uint16_t length, uint16_t shift, code_t *out)
+{
+  uint8_t n = length_to_n(length);
+  if (n == 0u || out == NULL) {
+    return -1;
+  }
+  uint32_t pa, pb;
+  if (gold_polys(n, &pa, &pb) != 0) {
+    return -1;   /* rodzina Gold tylko dla n nieparzystego (127, 511) */
+  }
+  static uint8_t u[CODE_MAXLEN];
+  static uint8_t v[CODE_MAXLEN];
+  mseq_galois(n, pa, 1u, u);
+  mseq_galois(n, pb, 1u, v);
+  out->length = length;
+  for (uint16_t i = 0; i < length; i++) {
+    out->bits[i] = u[i] ^ v[(uint16_t)((i + shift) % length)];
+  }
+  make_reference(out);
+  return 0;
+}

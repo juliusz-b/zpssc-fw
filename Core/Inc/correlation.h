@@ -31,6 +31,7 @@ typedef struct {
 
 void        correlation_init(void);
 void        correlation_set_reference(const code_t *code);
+void        correlation_set_reference_q15(const int16_t *ref, uint16_t len);
 void        correlation_run(const uint16_t *window, uint16_t win_len, corr_result_t *res);
 const char *correlation_engine_name(void);
 

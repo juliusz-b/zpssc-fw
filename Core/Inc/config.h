@@ -10,8 +10,9 @@
 #define CONFIG_H
 
 /* ============================ Tryb pracy ============================ */
-#define MODE_DIRECT      0   /* probkowanie na zywo, niski chip rate     */
-#define MODE_ETS         1   /* equivalent time sampling (zaczatek)      */
+#define MODE_DIRECT      0   /* probkowanie na zywo, jeden kod             */
+#define MODE_ETS         1   /* equivalent time sampling (zaczatek)        */
+#define MODE_SCAN        2   /* skan: bank kodow, kod na pasmo dlugosci fali */
 #ifndef OP_MODE
 #define OP_MODE          MODE_DIRECT
 #endif
@@ -58,6 +59,16 @@
 #define TUNING_DEFAULT_LEVEL  2048U   /* 12-bit (~1.65 V na PA4)          */
 #define TUNING_SWEEP_POINTS   256U    /* dlugosc LUT sweepa               */
 
+/* ================= Tryb skanu (bank kodow <-> dlugosc fali) ======== */
+/* Kazde pasmo dlugosci fali (poziom DAC) ma przypisany kod Gold. Skan
+   przechodzi po N poziomach, na kazdym emituje swoj kod i liczy korelacje
+   z calym bankiem. Bank dziala dla kodow Gold (CODE_LENGTH 127 lub 511);
+   przy 127 zajmuje CODE_BANK_SIZE*127*2 B referencji. */
+#define CODE_BANK_SIZE    16U     /* liczba kodow/pasm */
+#define SCAN_LEVEL_MIN    0U      /* poziom DAC pasma 0      (12-bit) */
+#define SCAN_LEVEL_MAX    4095U   /* poziom DAC pasma N-1    (12-bit) */
+#define SCAN_SETTLE_MS    2U      /* zwloka po zmianie poziomu/kodu   */
+
 /* ============================ Telemetria ========================== */
 #define UART_BAUD         921600UL
 
@@ -67,6 +78,9 @@
 #endif
 #if (CORR_ENGINE == CORR_ENGINE_FMAC) && (CODE_LENGTH > 127)
 #error "FMAC: filtr dopasowany do dlugosci <=127. Dla dluzszych uzyj CMSIS/PLAIN."
+#endif
+#if (CODE_BANK_SIZE * CODE_LENGTH) > 4096
+#error "Bank kodow za duzy na RAM. Zmniejsz CODE_BANK_SIZE lub CODE_LENGTH."
 #endif
 
 #endif /* CONFIG_H */
