@@ -34,6 +34,7 @@ static void dac_config_channel(uint32_t trigger)
 
 void tuning_init(void)
 {
+  __HAL_RCC_TIM6_CLK_ENABLE();   /* zegar timera wyzwalajacego sweep DAC */
   hdac1.Instance = DAC1;
   if (HAL_DAC_Init(&hdac1) != HAL_OK) {
     Error_Handler();
