@@ -183,6 +183,45 @@ lokalnego, zwraca listę (lag, amplituda). Liczba pików ograniczona `MAX_PEAKS`
   kalibracja na oscyloskopie). W firmware zostawiony jako szkielet z jasnym
   oznaczeniem co dostroić na sprzęcie (patrz `acquisition.c`, sekcja ETS).
 
+## 9b. Tryb SCAN: bank kodów i identyfikacja długości fali
+
+Schemat docelowy: każda długość fali (czyli poziom napięcia strojenia) ma
+przypisany własny kod z banku Gold. Skan przechodzi schodkowo po N poziomach
+(domyślnie 16, równo w zakresie DAC). Na każdym poziomie laser jest modulowany
+kodem tego pasma, a odbiornik liczy korelację okna z całym bankiem N kodów. To
+jest powód użycia Gold/Kasami: rodzina wielu kodów o niskiej korelacji wzajemnej.
+
+Wynik dla danego pasma k:
+- przekątna (okno z poziomu k skorelowane z kodem k) daje piki (lag, amplituda)
+  od siatek odbijających na tej długości fali; lag to opóźnienie round-trip,
+  czyli pozycja siatki wzdłuż światłowodu (jest >1 siatka),
+- maksimum korelacji z pozostałych kodów (xtalk) to kontrola przesłuchu.
+
+Z pełnego przebiegu składa się widmo: dla każdego pasma długości fali lista
+wykrytych siatek z pozycją i siłą odbicia.
+
+Bank trzymany jest jako N referencji Q15 (po jednej na pasmo), generowanych jako
+człony rodziny Gold (u XOR przesunięte v). Tryb schodkowy jest wolny, więc N
+korelacji na okno mieści się w budżecie czasu nawet dla CMSIS/C; FMAC
+przekonfigurowuje współczynniki na każdy kod.
+
+### Rozdzielczość odległości z lagu
+
+Lag piku to opóźnienie round-trip τ; odległość L = (v/2)·τ, gdzie v ≈ 2,04e8 m/s
+(n≈1,468). Rozdzielczość = 1 chip = 1/chip_rate, a zakres jednoznaczny = długość
+kodu × rozdzielczość.
+
+| chip rate | rozdzielczość ΔL | zakres (127 chipów) |
+|---|---|---|
+| 166 kchip/s (DIRECT teraz) | ~610 m | ~78 km |
+| 4 Mchip/s (limit ADC na żywo) | ~25 m | ~3,2 km |
+| 50 Mchip/s (ETS) | ~2 m | ~250 m |
+| 85 Mchip/s (max SPI, ETS) | ~1,2 m | ~150 m |
+
+Czyli pozycyjne rozróżnienie bliskich siatek wymaga wysokiego chip rate (tryb
+ETS) albo rozdzielenia siatek długimi odcinkami światłowodu. Sam podział na
+długości fali (kody) działa niezależnie od tego ograniczenia.
+
 ## 10. Moduły i pliki
 
 Logika aplikacji oddzielona od kodu HAL. `main.c` tylko spina (inicjalizacja

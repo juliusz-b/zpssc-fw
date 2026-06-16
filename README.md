@@ -99,11 +99,12 @@ Każda komenda zakończona znakiem nowej linii. Odpowiedzi `OK` / `ERR ...`.
 | `RATE <chip_hz>` | docelowy chip rate (zgłaszana wartość rzeczywista) |
 | `CODE <MSEQ\|GOLD\|KASAMI>` | typ sekwencji (przebudowa w locie) |
 | `LEN <127\|255\|511>` | długość kodu (kompilacyjnie, w `config.h`) |
-| `MODE <DIRECT\|ETS>` | tryb pracy |
-| `CORR` | wypis ostatniego wyniku korelacji |
-| `STREAM <ON\|OFF>` | automatyczny wypis wyniku po każdym oknie |
+| `MODE <DIRECT\|ETS\|SCAN>` | tryb pracy |
+| `SCAN` | skan banku kodów: widmo długość fali ↔ kod |
+| `CORR` | wypis ostatniego wyniku korelacji (DIRECT) |
+| `STREAM <ON\|OFF>` | auto-wypis: po oknie (DIRECT) lub zapętlony skan (SCAN) |
 
-Format wyniku korelacji:
+Format wyniku korelacji (DIRECT):
 
 ```
 CORR lags=<n> max=<amp> peaks=<k>
@@ -111,13 +112,38 @@ CORR lags=<n> max=<amp> peaks=<k>
  ...
 ```
 
+Format wyniku skanu (SCAN), po jednym wierszu na pasmo:
+
+```
+SCAN bands=<N>
+B <k> lvl=<dac> peaks=<m> |<lag>,<amp> |... xtalk=<maks_przesluch>
+...
+SCAN end
+```
+
+## Tryb SCAN (bank kodów ↔ długość fali)
+
+Każde pasmo długości fali ma przypisany własny kod Gold. Skan przechodzi po
+`CODE_BANK_SIZE` poziomach napięcia strojenia (równo w zakresie
+`SCAN_LEVEL_MIN..SCAN_LEVEL_MAX`); na każdym poziomie emituje kod tego pasma i
+liczy korelację okna z całym bankiem. Przekątna (kod *k* przy poziomie *k*) to
+sygnał z danego pasma, a piki dają pozycje (lag) i siłę odbić siatek o tej
+długości fali; `xtalk` to maksymalna korelacja z pozostałych kodów (kontrola
+przesłuchu). Przestrajanie może być wolne (rzędu 50 Hz), więc korelacja z całym
+bankiem mieści się spokojnie w budżecie czasu.
+
+Rozdzielczość odległości (z lagu) zależy od chip rate: ΔL = (v_światłowodu/2)/chip_rate.
+Przy 166 kchip/s to ~610 m na chip (zakres ~78 km dla kodu 127), więc bliskie
+siatki rozróżni dopiero tryb ETS z chip rate rzędu dziesiątek Mchip/s (~1-2 m).
+
 ## Konfiguracja (`Core/Inc/config.h`)
 
 Najważniejsze `#define`: `OP_MODE`, `CODE_TYPE`, `CODE_LENGTH`, `CHIP_RATE_HZ`,
 `CHIP_OVERSAMPLE`, `SAMPLES_PER_CHIP`, `WINDOW_CHIPS`, `CORR_ENGINE`, `MAX_PEAKS`,
-`PEAK_THRESH_FRAC`, `UART_BAUD`, `ANALOG_MOD`. Długość kodu jest kompilacyjna,
-bo od niej zależą rozmiary buforów. Część parametrów (chip rate, typ kodu, tryb,
-poziom/sweep) zmienia się też w locie komendami USART.
+`PEAK_THRESH_FRAC`, `UART_BAUD`, `ANALOG_MOD`, oraz dla trybu skanu
+`CODE_BANK_SIZE`, `SCAN_LEVEL_MIN`, `SCAN_LEVEL_MAX`, `SCAN_SETTLE_MS`. Długość
+kodu jest kompilacyjna, bo od niej zależą rozmiary buforów. Część parametrów
+(chip rate, typ kodu, tryb, poziom/sweep) zmienia się też w locie komendami USART.
 
 ## Struktura
 
