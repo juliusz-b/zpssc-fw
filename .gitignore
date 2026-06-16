@@ -14,6 +14,7 @@
 
 # CubeIDE / Eclipse (regenerowane przy imporcie)
 .settings/
+*.launch
 
 # Logi pomocnicze
 build_log.txt
