@@ -224,6 +224,28 @@ Czyli pozycyjne rozróżnienie bliskich siatek wymaga wysokiego chip rate (tryb
 ETS) albo rozdzielenia siatek długimi odcinkami światłowodu. Sam podział na
 długości fali (kody) działa niezależnie od tego ograniczenia.
 
+## 9c. Tryb widmowy (analizator, OP_MODE = MODE_SPECTRUM)
+
+Wybierany kompilacyjnie, osobny firmware. Pomysł: gdy przestrajamy długość fali
+napięciem DAC, a laser świeci CW (bez modulacji kodem), to moc odbita w czasie
+jest mocą odbitą w funkcji długości fali. To prosty aktywny interrogator
+widmowy: każda siatka FBG odbija przy swojej długości Bragga, więc w przebiegu
+pojawia się pik, a jego przesunięcie to odczyt czujnika. Komplementarne do CDM,
+które daje multipleksację i pozycję (lag); widmowy daje wprost mapę długość fali.
+
+Realizacja schodkowa (`spectrum.c`): DAC ustawiany na SPEC_POINTS poziomów,
+na każdym krótki settle i uśrednienie okna ADC = moc odbita. Schodki (a nie
+ciągła rampa) dają deterministyczne mapowanie indeks próbki -> poziom DAC ->
+długość fali, więc próbka k jest zawsze tym samym punktem sweepa, w każdym
+przebiegu. Laser CW: linia modulacji PA7 trzymana na stałym poziomie
+(`SPEC_LASER_PA7`, domyślnie niski; sposób sterowania do dobrania ze sterownikiem
+lasera, patrz uwaga o bias-T poniżej w pracy). Modulacja kodem i korelacja nie są
+w tym buildzie używane (linker usuwa nieużywany kod, stąd mniejszy obraz).
+
+Wynik na USART: nagłówek, CSV mocy w kolejności poziomów, lista pików (poziom =
+długość fali, amplituda = siła odbicia). Wersję z ciągłą rampą DAC (TIM6+DMA)
+zsynchronizowaną z ADC można dołożyć później jako szybszy wariant.
+
 ## 10. Moduły i pliki
 
 Logika aplikacji oddzielona od kodu HAL. `main.c` tylko spina (inicjalizacja
@@ -237,6 +259,7 @@ peryferiów w stylu CubeMX + super-pętla), moduły realizują funkcje:
 | tuning | `tuning.[ch]` | DAC1: poziom stały + sweep (TIM6 + DMA) |
 | acquisition | `acquisition.[ch]` | ADC1 + TIM trigger + DMA double-buffer |
 | correlation | `correlation.[ch]` | korelacja Q15 (FMAC/CMSIS/C) + detekcja pików |
+| spectrum | `spectrum.[ch]` | tryb widmowy: laser CW + sweep DAC + odczyt mocy |
 | comms | `comms.[ch]` | USART2: telemetria + parser komend ASCII |
 | config | `config.h` | parametry kompilacji (chip rate, długość kodu, tryb, silnik) |
 

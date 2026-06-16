@@ -71,6 +71,7 @@ make                  # Release, -O2 (correlation.c z -Ofast)
 make ENGINE=CMSIS     # silnik korelacji CMSIS-DSP
 make ENGINE=PLAIN     # referencyjny silnik C
 make ANALOG_MOD=1     # ścieżka modulacji analogowej (DAC1_OUT2)
+make SPECTRUM=1       # build trybu widmowego (analizator zamiast CDM)
 make clean
 ```
 
@@ -136,12 +137,38 @@ Rozdzielczość odległości (z lagu) zależy od chip rate: ΔL = (v_światłowo
 Przy 166 kchip/s to ~610 m na chip (zakres ~78 km dla kodu 127), więc bliskie
 siatki rozróżni dopiero tryb ETS z chip rate rzędu dziesiątek Mchip/s (~1-2 m).
 
+## Tryb widmowy (analizator, `make SPECTRUM=1`)
+
+Wybierany kompilacyjnie (`OP_MODE = MODE_SPECTRUM`, albo `make SPECTRUM=1`). To
+osobny firmware: laser świeci CW (bez modulacji), DAC przestraja długość fali
+schodkowo po `SPEC_POINTS` poziomach, a ADC mierzy moc odbitą na każdym poziomie.
+Wynik to przebieg moc(długość fali), w którym każda siatka FBG daje pik na swojej
+długości Bragga. To prostszy, bezpośredni interrogator widmowy, komplementarny do
+trybu CDM.
+
+Komenda `SPEC` robi jeden przebieg, `STREAM ON` zapętla. Format:
+
+```
+SPEC points=<N> min=<dac> max=<dac> peaks=<m>
+<p0>,<p1>,...,<pN-1>        (moc 12-bit, w kolejności poziomów)
+P <level> <power>           (wykryty pik = długość Bragga siatki)
+...
+SPEC end
+```
+
+Próbka o indeksie k to zawsze poziom DAC k, więc indeks jednoznacznie i powtarzalnie
+mapuje na długość fali (host liczy `level_k = min + k*(max-min)/(N-1)`). Linia
+modulacji PA7 jest w tym trybie trzymana na stałym poziomie (`SPEC_LASER_PA7`,
+domyślnie niski) jako sterowanie laserem CW, do dobrania ze sterownikiem lasera.
+W tym buildzie komendy CDM (CODE/RATE/MODE/SCAN/CORR) nie występują, jest `SPEC`.
+
 ## Konfiguracja (`Core/Inc/config.h`)
 
 Najważniejsze `#define`: `OP_MODE`, `CODE_TYPE`, `CODE_LENGTH`, `CHIP_RATE_HZ`,
 `CHIP_OVERSAMPLE`, `SAMPLES_PER_CHIP`, `WINDOW_CHIPS`, `CORR_ENGINE`, `MAX_PEAKS`,
-`PEAK_THRESH_FRAC`, `UART_BAUD`, `ANALOG_MOD`, oraz dla trybu skanu
-`CODE_BANK_SIZE`, `SCAN_LEVEL_MIN`, `SCAN_LEVEL_MAX`, `SCAN_SETTLE_MS`. Długość
+`PEAK_THRESH_FRAC`, `UART_BAUD`, `ANALOG_MOD`, dla trybu skanu
+`CODE_BANK_SIZE`, `SCAN_LEVEL_MIN/MAX`, `SCAN_SETTLE_MS`, a dla trybu widmowego
+`SPEC_POINTS`, `SPEC_LEVEL_MIN/MAX`, `SPEC_SETTLE_MS`, `SPEC_LASER_PA7`. Długość
 kodu jest kompilacyjna, bo od niej zależą rozmiary buforów. Część parametrów
 (chip rate, typ kodu, tryb, poziom/sweep) zmienia się też w locie komendami USART.
 
@@ -172,6 +199,7 @@ Core/Inc, Core/Src   moduły aplikacji + config.h + HAL conf
   tuning             DAC1: poziom + sweep
   acquisition        ADC1 + TIM2 trigger + DMA double-buffer + zaczątek ETS
   correlation        korelacja Q15 (FMAC / CMSIS-DSP / C) + detekcja pików
+  spectrum           tryb widmowy: laser CW + sweep DAC + odczyt mocy
   comms              USART2: telemetria + parser komend
 Core/Startup         startup_stm32g431xx.s
 Drivers              HAL, CMSIS, CMSIS-DSP (zwendowane)
