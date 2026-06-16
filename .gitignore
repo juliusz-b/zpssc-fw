@@ -1,0 +1,24 @@
+# Wyniki budowy (CubeIDE i make)
+/Debug/
+/Release/
+/build/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.lst
+*.su
+
+# CubeIDE / Eclipse (regenerowane przy imporcie)
+.settings/
+
+# Logi pomocnicze
+build_log.txt
+build_ide.txt
+
+# System
+Thumbs.db
+.DS_Store

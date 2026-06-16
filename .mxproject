@@ -1,0 +1,14 @@
+[PreviousGenFiles]
+AdvancedFolderStructure=true
+HeaderPath=Core/Inc;Drivers/STM32G4xx_HAL_Driver/Inc;Drivers/STM32G4xx_HAL_Driver/Inc/Legacy;Drivers/CMSIS/Device/ST/STM32G4xx/Include;Drivers/CMSIS/Include;
+HeaderFiles=stm32g4xx_hal_conf.h;main.h;config.h;board.h;code_gen.h;modulator.h;tuning.h;acquisition.h;correlation.h;comms.h;stm32g4xx_it.h;
+SourcePath=Core/Src;
+SourceFiles=main.c;board.c;code_gen.c;modulator.c;tuning.c;acquisition.c;correlation.c;comms.c;stm32g4xx_it.c;system_stm32g4xx.c;
+
+[PreviousLibFiles]
+LibFiles=Drivers/STM32G4xx_HAL_Driver;Drivers/CMSIS;
+
+[PreviousUsedSTM32CubeIDEFiles]
+SourceFiles=Core/Src/main.c;Core/Src/stm32g4xx_it.c;Core/Src/system_stm32g4xx.c;
+HeaderPath=Core/Inc;Drivers/STM32G4xx_HAL_Driver/Inc;Drivers/STM32G4xx_HAL_Driver/Inc/Legacy;Drivers/CMSIS/Device/ST/STM32G4xx/Include;Drivers/CMSIS/Include;
+CDefines=USE_HAL_DRIVER;STM32G431xx;
