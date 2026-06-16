@@ -13,6 +13,11 @@
 #include "arm_math.h"
 #endif
 
+/* Funkcje krytyczne w RAM (.RamFunc). Host-test wylacza je: -DRAMFUNC= */
+#ifndef RAMFUNC
+#define RAMFUNC __attribute__((section(".RamFunc")))
+#endif
+
 /* ------------------------- bufory robocze ------------------------- */
 #define CORR_BUF_LEN  (2u * WINDOW_CHIPS)
 
@@ -129,7 +134,7 @@ static uint16_t preprocess(const uint16_t *window, uint16_t win_len)
 /* ===================== silnik: prosta petla C ==================== */
 /* Uzywany przez silnik PLAIN oraz jako bezpieczny fallback FMAC. */
 #if (CORR_ENGINE != CORR_ENGINE_CMSIS)
-__attribute__((section(".RamFunc")))
+RAMFUNC
 static uint16_t corr_plain(uint16_t chips)
 {
   uint16_t n = ref_len;

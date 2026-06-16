@@ -137,7 +137,17 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir $(BUILD_DIR)
 
+# testy jednostkowe na hoscie (natywny gcc, nie arm). Wymaga gcc/clang w PATH.
+HOST_CC ?= gcc
+TEST_SRC = tests/test_main.c tests/test_code_gen.c tests/test_correlation.c \
+           Core/Src/code_gen.c Core/Src/correlation.c
+test: | $(BUILD_DIR)
+	$(HOST_CC) -std=c11 -Wall -Wextra -O1 -DCORR_ENGINE=2 -DRAMFUNC= -Itests -Itests/stub -ICore/Inc $(TEST_SRC) -o $(BUILD_DIR)/test_runner
+	$(BUILD_DIR)/test_runner
+
 clean:
 	-rm -fR $(BUILD_DIR)
+
+.PHONY: all clean test
 
 -include $(wildcard $(BUILD_DIR)/*.d)

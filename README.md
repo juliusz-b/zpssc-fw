@@ -145,6 +145,22 @@ Najważniejsze `#define`: `OP_MODE`, `CODE_TYPE`, `CODE_LENGTH`, `CHIP_RATE_HZ`,
 kodu jest kompilacyjna, bo od niej zależą rozmiary buforów. Część parametrów
 (chip rate, typ kodu, tryb, poziom/sweep) zmienia się też w locie komendami USART.
 
+## Testy jednostkowe
+
+Logika sprzętowo-niezależna (`code_gen`, korelacja i detekcja pików) ma testy
+hostowe budowane **natywnym gcc** (nie arm):
+
+```
+make test
+```
+
+Wymaga `gcc`/`clang` w PATH. Buduje moduły z `-DCORR_ENGINE=2` (PLAIN, bez HAL)
+i uruchamia asercje: długości i zrównoważenie m-sequence, idealna autokorelacja
+(off-peak = -1), ograniczona korelacja wzajemna banku Gold (t(7)=17), pik
+korelacji na zadanym lagu, dwie siatki = dwa piki, brak sygnału = brak pików.
+Testy leżą w `tests/`, to dobre miejsce na CI (np. GitHub Actions). Hardware
+(DMA/FMAC/ADC) weryfikuje się osobno na płytce.
+
 ## Struktura
 
 ```
@@ -158,6 +174,7 @@ Core/Inc, Core/Src   moduły aplikacji + config.h + HAL conf
   comms              USART2: telemetria + parser komend
 Core/Startup         startup_stm32g431xx.s
 Drivers              HAL, CMSIS, CMSIS-DSP (zwendowane)
+tests                testy hostowe (make test) + stub HAL
 STM32G431RBTX_FLASH.ld   skrypt linkera
 Makefile             budowa z linii poleceń
 ```
