@@ -158,8 +158,9 @@ Wymaga `gcc`/`clang` w PATH. Buduje moduły z `-DCORR_ENGINE=2` (PLAIN, bez HAL)
 i uruchamia asercje: długości i zrównoważenie m-sequence, idealna autokorelacja
 (off-peak = -1), ograniczona korelacja wzajemna banku Gold (t(7)=17), pik
 korelacji na zadanym lagu, dwie siatki = dwa piki, brak sygnału = brak pików.
-Testy leżą w `tests/`, to dobre miejsce na CI (np. GitHub Actions). Hardware
-(DMA/FMAC/ADC) weryfikuje się osobno na płytce.
+Testy leżą w `tests/`. CI w GitHub Actions (`.github/workflows/test.yml`) odpala
+`make test` na każdy push i pull request (runner w chmurze, nic lokalnie).
+Hardware (DMA/FMAC/ADC) weryfikuje się osobno na płytce.
 
 ## Struktura
 

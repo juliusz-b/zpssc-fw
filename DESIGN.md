@@ -200,8 +200,10 @@ Wynik dla danego pasma k:
 Z pełnego przebiegu składa się widmo: dla każdego pasma długości fali lista
 wykrytych siatek z pozycją i siłą odbicia.
 
-Bank trzymany jest jako N referencji Q15 (po jednej na pasmo), generowanych jako
-człony rodziny Gold (u XOR przesunięte v). Tryb schodkowy jest wolny, więc N
+Bank trzymany jest jako N referencji Q15 (po jednej na pasmo). Człony rodziny
+Gold powstają jako u XOR (v przesunięte cyklicznie), gdzie v to decymacja u o
+q = 2^((n+1)/2)+1. To para preferowana, więc korelacja wzajemna kodów jest
+ograniczona (t(7)=17, t(9)=33), co testuje host. Tryb schodkowy jest wolny, więc N
 korelacji na okno mieści się w budżecie czasu nawet dla CMSIS/C; FMAC
 przekonfigurowuje współczynniki na każdy kod.
 
