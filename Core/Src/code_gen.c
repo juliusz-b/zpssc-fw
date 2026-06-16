@@ -44,14 +44,30 @@ static uint8_t length_to_n(uint16_t length)
   }
 }
 
-/* Para wielomianow pierwotnych (poly_a, poly_b) dla Gold */
-static int gold_polys(uint8_t n, uint32_t *a, uint32_t *b)
+/* Wielomian pierwotny bazowej m-sequence (u) dla Gold. 0 = brak pary. */
+static uint32_t gold_prim_poly(uint8_t n)
 {
   switch (n) {
-    case 7: *a = 0x60u;  *b = 0x48u;  return 0;
-    case 9: *a = 0x110u; *b = 0x108u; return 0;
-    default: return -1;   /* n=8: Gold niestandardowy */
+    case 7: return 0x60u;
+    case 9: return 0x110u;
+    default: return 0u;   /* n=8: Gold niestandardowy */
   }
+}
+
+/* Para preferowana przez decymacje: v = u decymowane o q = 2^((n+1)/2)+1.
+   Daje ograniczona korelacje wzajemna kodow Gold (t(7)=17, t(9)=33). */
+static int gold_uv(uint8_t n, uint16_t length, uint8_t *u, uint8_t *v)
+{
+  uint32_t poly = gold_prim_poly(n);
+  if (poly == 0u) {
+    return -1;
+  }
+  mseq_galois(n, poly, 1u, u);
+  uint32_t q = (1u << ((n + 1u) / 2u)) + 1u;
+  for (uint16_t i = 0; i < length; i++) {
+    v[i] = u[(uint16_t)(((uint32_t)i * q) % length)];
+  }
+  return 0;
 }
 
 static void make_reference(code_t *out)
@@ -74,15 +90,12 @@ int code_gen_build(uint8_t type, uint16_t length, code_t *out)
     mseq_galois(n, poly, 1u, out->bits);
   }
   else if (type == CODE_GOLD) {
-    uint32_t pa, pb;
-    if (gold_polys(n, &pa, &pb) != 0) {
-      /* brak pary pierwotnej (n=8) - degraduj do m-sequence */
+    static uint8_t u[CODE_MAXLEN];
+    static uint8_t v[CODE_MAXLEN];
+    if (gold_uv(n, length, u, v) != 0) {
+      /* brak pary Gold (n=8) - degraduj do m-sequence */
       mseq_galois(n, 0xB8u, 1u, out->bits);
     } else {
-      static uint8_t u[CODE_MAXLEN];
-      static uint8_t v[CODE_MAXLEN];
-      mseq_galois(n, pa, 1u, u);
-      mseq_galois(n, pb, 1u, v);
       for (uint16_t i = 0; i < length; i++) {
         out->bits[i] = u[i] ^ v[i];          /* czlon rodziny dla przesuniecia 0 */
       }
@@ -123,14 +136,11 @@ int code_gen_gold_member(uint16_t length, uint16_t shift, code_t *out)
   if (n == 0u || out == NULL) {
     return -1;
   }
-  uint32_t pa, pb;
-  if (gold_polys(n, &pa, &pb) != 0) {
-    return -1;   /* rodzina Gold tylko dla n nieparzystego (127, 511) */
-  }
   static uint8_t u[CODE_MAXLEN];
   static uint8_t v[CODE_MAXLEN];
-  mseq_galois(n, pa, 1u, u);
-  mseq_galois(n, pb, 1u, v);
+  if (gold_uv(n, length, u, v) != 0) {
+    return -1;   /* rodzina Gold tylko dla n nieparzystego (127, 511) */
+  }
   out->length = length;
   for (uint16_t i = 0; i < length; i++) {
     out->bits[i] = u[i] ^ v[(uint16_t)((i + shift) % length)];
